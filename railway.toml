@@ -1,0 +1,5 @@
+[build]
+service = "bot"
+
+[deploy]
+start = "python BOT"
