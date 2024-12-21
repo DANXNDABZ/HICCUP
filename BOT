@@ -36,7 +36,9 @@ intents = discord.Intents.default()
 
 intents.members = True
 
-intents.messages = True  # Required for monitoring messages
+intents.messages = True
+
+intents.message_content = True  # Enable message content intent
 
 bot = commands.Bot(command_prefix="/", intents=intents)
 
@@ -93,32 +95,6 @@ async def initialize_database():
                 price INTEGER NOT NULL,
 
                 added_on TEXT
-
-            )
-
-        """)
-
-        await db.execute("""
-
-            CREATE TABLE IF NOT EXISTS achievements (
-
-                user_id TEXT,
-
-                achievement_name TEXT,
-
-                PRIMARY KEY (user_id, achievement_name)
-
-            )
-
-        """)
-
-        await db.execute("""
-
-            CREATE TABLE IF NOT EXISTS bounty (
-
-                user_id TEXT PRIMARY KEY,
-
-                total_bounty INTEGER DEFAULT 0
 
             )
 
@@ -208,11 +184,11 @@ async def get_shop_items():
 
 
 
-# Discord bot commands
+# Discord bot slash commands
 
-@bot.command(name="shop")
+@bot.tree.command(name="shop", description="View the weekly shop items.")
 
-async def shop(ctx):
+async def shop(interaction: discord.Interaction):
 
     items = await get_shop_items()
 
@@ -220,7 +196,7 @@ async def shop(ctx):
 
     if not items:
 
-        await ctx.send("The shop is currently empty.")
+        await interaction.response.send_message("The shop is currently empty.")
 
         return
 
@@ -242,15 +218,15 @@ async def shop(ctx):
 
 
 
-    await ctx.send(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
 
 
-@bot.command(name="buy")
+@bot.tree.command(name="buy", description="Buy an item from the shop.")
 
-async def buy(ctx, *, item_name: str):
+async def buy(interaction: discord.Interaction, item_name: str):
 
-    user_id = str(ctx.author.id)
+    user_id = str(interaction.user.id)
 
     item_name = item_name.lower()
 
@@ -268,7 +244,7 @@ async def buy(ctx, *, item_name: str):
 
     if not result:
 
-        await ctx.send(f"The item `{item_name}` is not available in the shop.")
+        await interaction.response.send_message(f"The item `{item_name}` is not available in the shop.")
 
         return
 
@@ -278,7 +254,7 @@ async def buy(ctx, *, item_name: str):
 
     if balance < price:
 
-        await ctx.send("You do not have enough Hoolicoins to buy this item.")
+        await interaction.response.send_message("You do not have enough Hoolicoins to buy this item.")
 
         return
 
@@ -286,57 +262,15 @@ async def buy(ctx, *, item_name: str):
 
     await update_balance(user_id, balance - price)
 
-    await ctx.send(f"You have purchased `{item_name}` for {price} Hoolicoins!")
+    await interaction.response.send_message(f"You have purchased `{item_name}` for {price} Hoolicoins!")
 
 
 
-@bot.command(name="leaderboard")
+@bot.tree.command(name="ping", description="Test if the bot is responsive.")
 
-async def leaderboard(ctx, limit: int = 10):
+async def ping(interaction: discord.Interaction):
 
-    if limit < 1 or limit > 50:
-
-        await ctx.send("Please specify a limit between 1 and 50.")
-
-        return
-
-
-
-    async with aiosqlite.connect(DATABASE_FILE) as db:
-
-        async with db.execute("SELECT user_id, balance FROM economy ORDER BY balance DESC LIMIT ?", (limit,)) as cursor:
-
-            leaderboard = await cursor.fetchall()
-
-
-
-    if not leaderboard:
-
-        await ctx.send("No users found in the leaderboard.")
-
-        return
-
-
-
-    embed = discord.Embed(
-
-        title="🏆 Economy Leaderboard",
-
-        description=f"Top {limit} richest users:",
-
-        color=discord.Color.gold()
-
-    )
-
-    for rank, (user_id, balance) in enumerate(leaderboard, start=1):
-
-        user = await bot.fetch_user(user_id)
-
-        embed.add_field(name=f"{rank}. {user.display_name}", value=f"{balance} Hoolicoins", inline=False)
-
-
-
-    await ctx.send(embed=embed)
+    await interaction.response.send_message("Pong!")
 
 
 
@@ -351,6 +285,16 @@ async def on_ready():
     print("Database initialized.")
 
     bot.loop.create_task(schedule_shop_rotation())
+
+    try:
+
+        await bot.tree.sync()  # Sync commands with Discord
+
+        print("Slash commands synced!")
+
+    except Exception as e:
+
+        print(f"Error syncing slash commands: {e}")
 
 
 
