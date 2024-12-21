@@ -30,15 +30,15 @@ DATABASE_FILE = "economy.db"
 
 
 
-# Discord bot setup with slash commands
+# Discord bot setup
 
 intents = discord.Intents.default()
 
-intents.messages = True
+intents.messages = True  # Required for monitoring messages
+
+intents.members = True
 
 bot = commands.Bot(command_prefix="/", intents=intents)
-
-tree = bot.tree  # For managing slash commands
 
 
 
@@ -60,7 +60,7 @@ SHOP_ITEMS_POOL = [
 
     {"name": "Mysterious Scroll", "price": 400},
 
-    {"name": "Resurrection Stone", "price": 1000},
+    {"name": "Resurrection Stone", "price": 1000}
 
 ]
 
@@ -208,11 +208,11 @@ async def get_shop_items():
 
 
 
-# Slash command: Shop
+# Discord bot commands
 
-@tree.command(name="shop", description="View the weekly shop.")
+@bot.command(name="shop")
 
-async def shop(interaction: discord.Interaction):
+async def shop(ctx):
 
     items = await get_shop_items()
 
@@ -220,7 +220,7 @@ async def shop(interaction: discord.Interaction):
 
     if not items:
 
-        await interaction.response.send_message("The shop is currently empty.")
+        await ctx.send("The shop is currently empty.")
 
         return
 
@@ -242,17 +242,15 @@ async def shop(interaction: discord.Interaction):
 
 
 
-    await interaction.response.send_message(embed=embed)
+    await ctx.send(embed=embed)
 
 
 
-# Slash command: Buy
+@bot.command(name="buy")
 
-@tree.command(name="buy", description="Buy an item from the shop.")
+async def buy(ctx, *, item_name: str):
 
-async def buy(interaction: discord.Interaction, item_name: str):
-
-    user_id = str(interaction.user.id)
+    user_id = str(ctx.author.id)
 
     item_name = item_name.lower()
 
@@ -270,7 +268,7 @@ async def buy(interaction: discord.Interaction, item_name: str):
 
     if not result:
 
-        await interaction.response.send_message(f"The item `{item_name}` is not available in the shop.")
+        await ctx.send(f"The item `{item_name}` is not available in the shop.")
 
         return
 
@@ -280,7 +278,7 @@ async def buy(interaction: discord.Interaction, item_name: str):
 
     if balance < price:
 
-        await interaction.response.send_message("You do not have enough Hoolicoins to buy this item.")
+        await ctx.send("You do not have enough Hoolicoins to buy this item.")
 
         return
 
@@ -288,19 +286,17 @@ async def buy(interaction: discord.Interaction, item_name: str):
 
     await update_balance(user_id, balance - price)
 
-    await interaction.response.send_message(f"You have purchased `{item_name}` for {price} Hoolicoins!")
+    await ctx.send(f"You have purchased `{item_name}` for {price} Hoolicoins!")
 
 
 
-# Slash command: Leaderboard
+@bot.command(name="leaderboard")
 
-@tree.command(name="leaderboard", description="View the economy leaderboard.")
-
-async def leaderboard(interaction: discord.Interaction, limit: int = 10):
+async def leaderboard(ctx, limit: int = 10):
 
     if limit < 1 or limit > 50:
 
-        await interaction.response.send_message("Please specify a limit between 1 and 50.")
+        await ctx.send("Please specify a limit between 1 and 50.")
 
         return
 
@@ -316,7 +312,7 @@ async def leaderboard(interaction: discord.Interaction, limit: int = 10):
 
     if not leaderboard:
 
-        await interaction.response.send_message("No users found in the leaderboard.")
+        await ctx.send("No users found in the leaderboard.")
 
         return
 
@@ -340,21 +336,19 @@ async def leaderboard(interaction: discord.Interaction, limit: int = 10):
 
 
 
-    await interaction.response.send_message(embed=embed)
+    await ctx.send(embed=embed)
 
 
-
-# Bot on_ready event
 
 @bot.event
 
 async def on_ready():
 
+    print(f"Logged in as {bot.user}")
+
     await initialize_database()
 
-    await tree.sync()
-
-    print(f"Bot logged in as {bot.user}")
+    print("Database initialized.")
 
     bot.loop.create_task(schedule_shop_rotation())
 
@@ -384,7 +378,7 @@ async def shop_items():
 
 def run_dashboard():
 
-    app.run(debug=True, use_reloader=False)
+    app.run(debug=False, use_reloader=False, host="0.0.0.0")
 
 
 
@@ -397,3 +391,4 @@ dashboard_thread.start()
 # Run the Discord bot
 
 bot.run(os.getenv("DISCORD_BOT_TOKEN"))
+
