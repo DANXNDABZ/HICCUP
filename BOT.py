@@ -14,11 +14,14 @@ app = Flask(__name__)
 # SQLite database file
 DATABASE_FILE = "economy.db"
 
+# Configure intents
+intents = discord.Intents.default()  # Start with default intents
+intents.members = True               # Enable member-related events
+intents.messages = True              # Enable message-related events
+intents.message_content = True       # Enable message content access (required for non-slash commands)
+
 # Discord bot setup
-intents = discord.Intents.default()
-intents.members = True
-intents.messages = True  # Required for monitoring messages
-bot = commands.Bot(command_prefix="!", intents=intents)  # Changed prefix from '/' to '!'
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Shop items pool for weekly rotation
 SHOP_ITEMS_POOL = [
