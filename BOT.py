@@ -34,9 +34,9 @@ DATABASE_FILE = "economy.db"
 
 intents = discord.Intents.default()
 
-intents.messages = True  # Required for monitoring messages
-
 intents.members = True
+
+intents.messages = True  # Required for monitoring messages
 
 bot = commands.Bot(command_prefix="/", intents=intents)
 
@@ -378,7 +378,7 @@ async def shop_items():
 
 def run_dashboard():
 
-    app.run(debug=False, use_reloader=False, host="0.0.0.0")
+    app.run(debug=True, use_reloader=False, port=int(os.getenv("PORT", 5000)))
 
 
 
@@ -390,4 +390,5 @@ dashboard_thread.start()
 
 # Run the Discord bot
 
-bot.run(os.getenv("DISCORD_BOT_TOKEN"))
+bot.run(os.getenv("YOUR_BOT_TOKEN"))
+
