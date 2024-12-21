@@ -2,4 +2,4 @@
 service = "bot"
 
 [deploy]
-start = "npm run start"
+start = "python BOT.py"
