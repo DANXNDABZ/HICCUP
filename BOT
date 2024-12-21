@@ -390,4 +390,4 @@ dashboard_thread.start()
 
 # Run the Discord bot
 
-bot.run(os.getenv("MTMxODM3NjIxMjA3NDA3MDA5MQ.GjQ5cd._tR_caz4nRpB1jzzCo6jl1x4cN1f98G2EeIVwE"))
+bot.run(os.getenv("MTMxODM3NjIxMjA3NDA3MDA5MQ.GQb9_1.n7oPBVZK9vOxga85_S65WHWJp4iD0ECmAxdnls"))
