@@ -30,17 +30,15 @@ DATABASE_FILE = "economy.db"
 
 
 
-# Discord bot setup
+# Discord bot setup with slash commands
 
 intents = discord.Intents.default()
 
-intents.members = True
-
 intents.messages = True
 
-intents.message_content = True  # Enable message content intent
-
 bot = commands.Bot(command_prefix="/", intents=intents)
+
+tree = bot.tree  # For managing slash commands
 
 
 
@@ -62,7 +60,7 @@ SHOP_ITEMS_POOL = [
 
     {"name": "Mysterious Scroll", "price": 400},
 
-    {"name": "Resurrection Stone", "price": 1000}
+    {"name": "Resurrection Stone", "price": 1000},
 
 ]
 
@@ -95,6 +93,32 @@ async def initialize_database():
                 price INTEGER NOT NULL,
 
                 added_on TEXT
+
+            )
+
+        """)
+
+        await db.execute("""
+
+            CREATE TABLE IF NOT EXISTS achievements (
+
+                user_id TEXT,
+
+                achievement_name TEXT,
+
+                PRIMARY KEY (user_id, achievement_name)
+
+            )
+
+        """)
+
+        await db.execute("""
+
+            CREATE TABLE IF NOT EXISTS bounty (
+
+                user_id TEXT PRIMARY KEY,
+
+                total_bounty INTEGER DEFAULT 0
 
             )
 
@@ -184,9 +208,9 @@ async def get_shop_items():
 
 
 
-# Discord bot slash commands
+# Slash command: Shop
 
-@bot.tree.command(name="shop", description="View the weekly shop items.")
+@tree.command(name="shop", description="View the weekly shop.")
 
 async def shop(interaction: discord.Interaction):
 
@@ -222,7 +246,9 @@ async def shop(interaction: discord.Interaction):
 
 
 
-@bot.tree.command(name="buy", description="Buy an item from the shop.")
+# Slash command: Buy
+
+@tree.command(name="buy", description="Buy an item from the shop.")
 
 async def buy(interaction: discord.Interaction, item_name: str):
 
@@ -266,35 +292,71 @@ async def buy(interaction: discord.Interaction, item_name: str):
 
 
 
-@bot.tree.command(name="ping", description="Test if the bot is responsive.")
+# Slash command: Leaderboard
 
-async def ping(interaction: discord.Interaction):
+@tree.command(name="leaderboard", description="View the economy leaderboard.")
 
-    await interaction.response.send_message("Pong!")
+async def leaderboard(interaction: discord.Interaction, limit: int = 10):
+
+    if limit < 1 or limit > 50:
+
+        await interaction.response.send_message("Please specify a limit between 1 and 50.")
+
+        return
 
 
+
+    async with aiosqlite.connect(DATABASE_FILE) as db:
+
+        async with db.execute("SELECT user_id, balance FROM economy ORDER BY balance DESC LIMIT ?", (limit,)) as cursor:
+
+            leaderboard = await cursor.fetchall()
+
+
+
+    if not leaderboard:
+
+        await interaction.response.send_message("No users found in the leaderboard.")
+
+        return
+
+
+
+    embed = discord.Embed(
+
+        title="🏆 Economy Leaderboard",
+
+        description=f"Top {limit} richest users:",
+
+        color=discord.Color.gold()
+
+    )
+
+    for rank, (user_id, balance) in enumerate(leaderboard, start=1):
+
+        user = await bot.fetch_user(user_id)
+
+        embed.add_field(name=f"{rank}. {user.display_name}", value=f"{balance} Hoolicoins", inline=False)
+
+
+
+    await interaction.response.send_message(embed=embed)
+
+
+
+# Bot on_ready event
 
 @bot.event
 
 async def on_ready():
 
-    print(f"Logged in as {bot.user}")
-
     await initialize_database()
 
-    print("Database initialized.")
+    await tree.sync()
+
+    print(f"Bot logged in as {bot.user}")
 
     bot.loop.create_task(schedule_shop_rotation())
-
-    try:
-
-        await bot.tree.sync()  # Sync commands with Discord
-
-        print("Slash commands synced!")
-
-    except Exception as e:
-
-        print(f"Error syncing slash commands: {e}")
 
 
 
@@ -334,4 +396,4 @@ dashboard_thread.start()
 
 # Run the Discord bot
 
-bot.run(os.getenv("YOUR_BOT_TOKEN"))
+bot.run(os.getenv("DISCORD_BOT_TOKEN"))
