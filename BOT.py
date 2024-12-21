@@ -30,13 +30,15 @@ DATABASE_FILE = "economy.db"
 
 
 
-# Discord bot setup
+# Discord bot setup with updated intents
 
 intents = discord.Intents.default()
 
 intents.members = True
 
 intents.messages = True  # Required for monitoring messages
+
+intents.message_content = True  # Enable message content intent
 
 bot = commands.Bot(command_prefix="/", intents=intents)
 
@@ -378,7 +380,7 @@ async def shop_items():
 
 def run_dashboard():
 
-    app.run(debug=True, use_reloader=False, port=int(os.getenv("PORT", 5000)))
+    app.run(debug=False, use_reloader=False)
 
 
 
