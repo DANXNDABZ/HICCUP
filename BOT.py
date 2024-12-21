@@ -1,12 +1,12 @@
 import discord
 from discord.ext import commands
-from flask import Flask, jsonify
 import aiosqlite
 import threading
 import random
 import time
 import asyncio
 import os
+from flask import Flask, jsonify
 
 # Flask setup for the dashboard
 app = Flask(__name__)
@@ -14,14 +14,11 @@ app = Flask(__name__)
 # SQLite database file
 DATABASE_FILE = "economy.db"
 
-# Configure intents
-intents = discord.Intents.default()  # Start with default intents
-intents.members = True               # Enable member-related events
-intents.messages = True              # Enable message-related events
-intents.message_content = True       # Enable message content access (required for non-slash commands)
-
-# Discord bot setup
-bot = commands.Bot(command_prefix="!", intents=intents)
+# Discord bot setup with correct intents and new prefix "?"
+intents = discord.Intents.default()
+intents.members = True
+intents.messages = True  # Required for reading messages
+bot = commands.Bot(command_prefix="?", intents=intents)
 
 # Shop items pool for weekly rotation
 SHOP_ITEMS_POOL = [
